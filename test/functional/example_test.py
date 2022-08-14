@@ -220,6 +220,29 @@ class ExampleTest(BitcoinTestFramework):
             for block in peer_receiving.block_receive_map.values():
                 assert_equal(block, 1)
 
+                
+        self.log.info("Mining block as node 1")
+        block = create_block(self.tip, create_coinbase(height+1), self.block_time)
+        block.solve()
+        block_message = msg_block(block)
+
+        # updating self data
+        self.tip = block.sha256
+        blocks.append(self.tip)
+        self.block_time += 1
+        height += 1
+        
+        self.log.info("Sending mined block to other nodes")
+        peer_messaging = self.nodes[1].add_p2p_connection(BaseNode())
+        peer_messaging.send_message(block_message)
+
+        #waiting for new block
+        self.nodes[2].waitforblockheight(11)
+
+        self.log.info("Checking block count at node 2")
+        assert_equal(self.nodes[2].getblockcount(), 12)
+        self.log.info("Node 2 successfully received mined block")
+
 
 if __name__ == '__main__':
     ExampleTest().main()
